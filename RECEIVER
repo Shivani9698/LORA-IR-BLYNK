@@ -1,0 +1,84 @@
+//RECEIVER  
+#include <SPI.h>
+#include <LoRa.h>
+// Template ID, Device Name and Auth Token are provided by the Blynk.Cloud
+// See the Device Info tab, or Template settings
+#define BLYNK_TEMPLATE_ID "TMPL3XUDIMBEO"
+#define BLYNK_TEMPLATE_NAME "POT AND LED"
+#define BLYNK_AUTH_TOKEN "OiGBv7x6OfDuRGdiLiz840vmf6y70wP3"
+
+
+// Comment this out to disable prints and save space
+#define BLYNK_PRINT Serial
+
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <BlynkSimpleEsp32.h>
+String LoRaData;
+const int IR_Sensor = 12;
+ int IR_State = digitalRead(IR_Sensor);
+char auth[] = BLYNK_AUTH_TOKEN;
+
+// Your WiFi credentials.
+// Set password to "" for open networks.
+char ssid[] = "FTTHBSNL";
+char pass[] = "29915693";
+
+BlynkTimer timer;
+#define ss 5
+#define rst 14
+#define dio0 2
+
+void setup() {
+  //initialize Serial Monitor
+  Serial.begin(115200);
+    Blynk.begin(auth, ssid, pass);
+  while (!Serial);
+  Serial.println("LoRa Receiver");
+
+  //setup LoRa transceiver module
+  LoRa.setPins(ss, rst, dio0);
+  
+  //replace the LoRa.begin(---E-) argument with your location's frequency 
+  //433E6 for Asia
+  //866E6 for Europe
+  //915E6 for North America
+  while (!LoRa.begin(866E6)) {
+    Serial.println(".");
+    delay(500);
+  }
+   // Change sync word (0xF3) to match the receiver
+  // The sync word assures you don't get LoRa messages from other LoRa transceivers
+  // ranges from 0-0xFF
+  LoRa.setSyncWord(0xF3);
+  Serial.println("LoRa Initializing OK!");
+}
+
+void loop() {
+      Blynk.run();
+  // try to parse packet
+  int packetSize = LoRa.parsePacket();
+  if (packetSize) {
+    // received a packet
+    Serial.print("Received packet '");
+
+    // read packet
+    while (LoRa.available()) {
+       LoRaData = LoRa.readString();
+      Serial.print(LoRaData); 
+    }
+
+    // print RSSI of packet
+    Serial.print("' with RSSI ");
+    Serial.println(LoRa.packetRssi());
+  }
+
+
+  delay(200);
+// kyy dikkat kyy perashani aa gyadekho thora sa dhyan do yrr 
+    Blynk.virtualWrite(V3,LoRaData);// 
+     Blynk.virtualWrite(V6,LoRaData.substring(1, 3).toInt());
+    Serial.println("Data : " + String (LoRaData)); 
+ // Blynk.virtualWrite(V4,LoRaData.substring(13,16) );  // Temp29.90Humi temp
+
+}
